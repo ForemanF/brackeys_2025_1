@@ -95,6 +95,5 @@ public class ClickMovement : MonoBehaviour
 
         lr.positionCount = points.Count;
         lr.SetPositions(points.ToArray());
-
     }
 }
