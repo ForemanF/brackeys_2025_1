@@ -50,6 +50,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a5fcce72c562241ce97646d446224c92, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  lerp_speed: 400
 --- !u!1 &1421757303636062717
 GameObject:
   m_ObjectHideFlags: 0

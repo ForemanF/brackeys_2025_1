@@ -57,7 +57,7 @@ public class PathFinder
         foreach (HexTile hex_tile in current_node.target.GetNeighbors()) {
             Node node = new Node(hex_tile, origin, destination, current_node.GetCost());
 
-            if(hex_tile.GetTileType() != TileType.Default) {
+            if(hex_tile.GetTileState() != TileState.Default) {
                 node.base_cost = Mathf.Infinity;
             }
 

@@ -32,7 +32,7 @@ public class DeckManager : MonoBehaviour
     float card_spacing = 100;
 
     [SerializeField]
-    float draw_speed_s = 1;
+    float draw_time_s = 1;
 
     Card current_highlighted_card = null;
 
@@ -69,7 +69,7 @@ public class DeckManager : MonoBehaviour
 
     IEnumerator TestLoop() { 
         while(true) {
-            yield return new WaitForSeconds(5f);
+            yield return new WaitForSeconds(1f);
 
             yield return HandleDrawCard();
 
@@ -111,38 +111,22 @@ public class DeckManager : MonoBehaviour
 
     IEnumerator HandleDrawCard() {
         int starting_hand_size = hand.Count;
-        List<Vector3> starting_positions = GetCardPositions(starting_hand_size);
         List<Vector3> ending_positions = GetCardPositions(starting_hand_size + 1);
-
-        float start_time = Time.time;
-        float progress = 0;
 
         Card drawn_card = DrawCard();
         int drawn_index = hand.Count - 1;
-        Vector3 drawn_start_pos = drawn_card.GetComponent<RectTransform>().anchoredPosition;
 
-
-        while(progress < 1) {
-            progress = (Time.time - start_time) / draw_speed_s;
-
-            // shift the cards already in the hand
-            for(int i = 0; i < starting_hand_size; ++i) {
-                hand[i].GetComponent<RectTransform>().anchoredPosition = Vector3.Lerp(starting_positions[i], ending_positions[i], progress);
-            }
-
-            // move the card from the deck to the hand
-            drawn_card.GetComponent<RectTransform>().anchoredPosition = Vector3.Lerp(drawn_start_pos, ending_positions[drawn_index], progress);
-
-            yield return null;
+        // shift the cards already in the hand
+        for(int i = 0; i < starting_hand_size; ++i) {
+            hand[i].GoToPosition(ending_positions[i], draw_time_s);
         }
 
-        for(int i = 0; i < hand.Count; ++i) {
-            hand[i].GetComponent<RectTransform>().anchoredPosition = ending_positions[i];
-        }
-        drawn_card.GetComponent<RectTransform>().anchoredPosition = ending_positions[drawn_index];
+        // move the card from the deck to the hand
+        drawn_card.GoToPosition(ending_positions[drawn_index], draw_time_s);
 
-        foreach(Card card in hand) {
-            card.SetBasePosition(card.GetComponent<RectTransform>().anchoredPosition);
+        for(int i = 0; i < hand.Count; ++i)
+        {
+            hand[i].SetBasePosition(ending_positions[i]);
         }
 
         yield return null;
@@ -152,10 +136,7 @@ public class DeckManager : MonoBehaviour
         if (card != current_highlighted_card) { 
 
             if(current_highlighted_card != null) { 
-                if(highlighters.TryGetValue(current_highlighted_card, out Coroutine rise_co)) {
-                    StopCoroutine(rise_co);
-                    highlighters[current_highlighted_card] = StartCoroutine(LowerCard(current_highlighted_card));
-                }
+                current_highlighted_card.GoToBasePosition();
             }
 
             if(card == null) {
@@ -163,54 +144,13 @@ public class DeckManager : MonoBehaviour
                 return;
             }
 
-            if (highlighters.TryGetValue(card, out Coroutine lower_co))
-            {
-                StopCoroutine(lower_co);
-            }
-
-            highlighters[card] = StartCoroutine(RiseCard(card));
+            Vector3 end_pos = card.GetBasePosition();
+            end_pos.y += highlight_rise_amt_y;
+            card.GoToPosition(end_pos);
 
             current_highlighted_card = card;
         }
     }
-
-    IEnumerator RiseCard(Card card) {
-        float start_time = Time.time;
-        float progress = 0;
-
-        Vector3 start_pos = card.GetComponent<RectTransform>().anchoredPosition;
-
-        Vector3 goal_pos = card.GetBasePosition();
-        goal_pos.y += highlight_rise_amt_y;
-
-        while(progress < 1) {
-            progress = (Time.time - start_time) / 0.4f;
-            card.GetComponent<RectTransform>().anchoredPosition = Vector3.Lerp(start_pos, goal_pos, progress);
-
-            yield return null;
-        }
-
-        card.GetComponent<RectTransform>().anchoredPosition = goal_pos;
-    }
-
-    IEnumerator LowerCard(Card card) {
-        float start_time = Time.time;
-        float progress = 0;
-
-        Vector3 start_pos = card.GetComponent<RectTransform>().anchoredPosition;
-
-        Vector3 goal_pos = card.GetBasePosition();
-
-        while(progress < 1) {
-            progress = (Time.time - start_time) / 1;
-            card.GetComponent<RectTransform>().anchoredPosition = Vector3.Lerp(start_pos, goal_pos, progress);
-
-            yield return null;
-        }
-
-        card.GetComponent<RectTransform>().anchoredPosition = goal_pos;
-    }
-        
 
     Card DrawCard() {
         Card drawn_card = draw_pile[draw_pile.Count - 1];
@@ -245,8 +185,4 @@ public class DeckManager : MonoBehaviour
         return card_locations;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-    }
 }

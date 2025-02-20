@@ -13,7 +13,7 @@ public class BasicMovement : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        current_tile = tm.GetRandom();
+        current_tile = tm.GetRandomValid();
         transform.position = current_tile.transform.position + new Vector3(0, 1, 0);
 
         StartCoroutine(MovementLoop());
@@ -34,7 +34,7 @@ public class BasicMovement : MonoBehaviour
 
     IEnumerator HandleMovement() { 
         if(path == null || path.Count == 0) {
-            HexTile destination = tm.GetRandom();
+            HexTile destination = tm.GetRandomValid();
             path = PathFinder.FindPath(current_tile, destination);
         }
         else { 

@@ -1,6 +1,10 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
+
+[System.Serializable] public class BiomeTuple { public TileBiome biome; public Material colormap; }
+[System.Serializable] public class HexMeshTuple { public TileMesh tile_mesh; public Mesh mesh; }
 
 public class TileManager : MonoBehaviour
 {
@@ -27,10 +31,29 @@ public class TileManager : MonoBehaviour
     [SerializeField]
     GameObject highlight_object;
 
+    [SerializeField]
+    BiomeTuple[] tile_biomes;
+
+    [SerializeField]
+    HexMeshTuple[] tile_meshes;
+
+    Dictionary<TileBiome, Material> tile_biomes_dict;
+    Dictionary<TileMesh, Mesh> tile_meshes_dict;
+
     List<HexTile> path;
 
     private void Awake()
     {
+        tile_biomes_dict = new Dictionary<TileBiome, Material>();
+        foreach(BiomeTuple biome_tuple in tile_biomes) {
+            tile_biomes_dict[biome_tuple.biome] = biome_tuple.colormap;
+        }
+
+        tile_meshes_dict = new Dictionary<TileMesh, Mesh>();
+        foreach(HexMeshTuple hex_mesh_tuple in tile_meshes) {
+            tile_meshes_dict[hex_mesh_tuple.tile_mesh] = hex_mesh_tuple.mesh;
+        }
+
         CreateGrid();
 
         tile_dict = new Dictionary<Vector3Int, HexTile>();
@@ -109,20 +132,35 @@ public class TileManager : MonoBehaviour
                 hex_tile.SetCubeCoords(offset_coords);
 
                 // temp random tile type
-                if(Random.Range(0f, 1f) < 0.1f) {
-                    if(hex_tile.GetCubeCoords() != Vector3Int.zero) { 
-                        hex_tile.SetTileType(TileType.Water);
+                if (Random.Range(0f, 1f) < 0.1f)
+                {
+                    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
+                    {
+                        TileBiome new_biome = TileBiome.Winter;
+                        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
+                    }
+                }
+                if (Random.Range(0f, 1f) < 0.1f)
+                {
+                    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
+                    {
+                        TileBiome new_biome = TileBiome.Desert;
+                        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
                     }
                 }
 
+                if (Random.Range(0, 1f) < 0.35f) {
+                    TileMesh new_mesh = (TileMesh)Random.Range(0, (int)System.Enum.GetValues(typeof(TileMesh)).Cast<TileMesh>().Max());
+                    hex_tile.SetTileMesh(new_mesh, tile_meshes_dict[new_mesh]);
+                }
             }
         }
     }
 
-    public HexTile GetRandom() {
+    public HexTile GetRandomValid() {
         int rand_int = Random.Range(0, hex_tiles.Length);
 
-        while (hex_tiles[rand_int].GetTileType() != TileType.Default) { 
+        while (hex_tiles[rand_int].GetTileState() != TileState.Default) { 
             rand_int = Random.Range(0, hex_tiles.Length);
         }
 
