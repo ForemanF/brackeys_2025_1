@@ -9,21 +9,33 @@ public class CameraSelectionRaycaster : MonoBehaviour
     Camera my_camera;
 
     [SerializeField]
-    ClickMovement click_movement;
+    DeckManager deck_manager;
 
     [SerializeField]
-    DeckManager deck_manager;
+    GameManager game_manager;
 
     // card that is actively clicked and moving
     [SerializeField]
     Card selected_card = null;
 
+    [SerializeField]
+    float ui_back_height = 280;
+
+    [SerializeField]
+    float time_before_transparent_s = 3;
+
+    float time_current_card_selected = 0;
+
+    int hand_card_layer;
+    int ui_back_layer;
     int ui_layer;
 
     // Start is called before the first frame update
     void Start()
     {
-        ui_layer = LayerMask.NameToLayer("UI");
+        hand_card_layer = LayerMask.NameToLayer("HandCard");
+        ui_back_layer = LayerMask.NameToLayer("UIBack");
+        ui_back_layer = LayerMask.NameToLayer("UI");
     }
 
     // Update is called once per frame
@@ -33,49 +45,70 @@ public class CameraSelectionRaycaster : MonoBehaviour
 
         MoveCard(current_card);
 
-        if(current_card == null && selected_card == null) { 
-            SceneMouseInteraction();
-        }
+        HighlightMouseTile();
     }
 
-    void SceneMouseInteraction() { 
+    HexTile GetMouseTile() { 
         RaycastHit hit;
         Ray ray = my_camera.ScreenPointToRay(Input.mousePosition);
 
-        if(Physics.Raycast(ray, out hit)) {
+        HexTile hex_tile = null;
+        if (Physics.Raycast(ray, out hit))
+        {
             Transform object_hit = hit.transform;
 
             HexTileVisual target;
-            if(object_hit.TryGetComponent(out target)) {
-                HexTile highlighted_tile = target.GetHexTile();
-
-                EventBus.Publish(new HighlightTileEvent(highlighted_tile));
-
-                if(Input.GetMouseButtonDown(0)) {
-                    click_movement.SetPath(highlighted_tile);
-                }
+            if (object_hit.TryGetComponent(out target))
+            {
+                hex_tile = target.GetHexTile();
             }
+        }
+        return hex_tile;
+    }
+
+    void HighlightMouseTile() {
+        HexTile highlighted_tile = GetMouseTile();
+
+        if(highlighted_tile != null) { 
+            EventBus.Publish(new HighlightTileEvent(highlighted_tile));
         }
     }
 
-    void MoveCard(Card card) { 
+    void MoveCard(Card card) {
+        HexTile cur_hex_tile = GetMouseTile();
+
         // If left click, start setting the position of the card
         if(Input.GetMouseButtonDown(0) && card != null) {
             // check if it is a UI item
             card.StopCurrentCoroutine();
 
+            // return the previous selected card back to its home
             if (selected_card != null) {
                 selected_card.GoToBasePosition();
             }
 
-            // return the previous selected card back to its home
-            selected_card = card;
+            // check if we can pay for the card
+            int amount = card.GetCardAction().GetCost();
+            bool has_enough_energy = game_manager.HasEnoughEnergy(amount);
+
+            if(has_enough_energy == false) {
+                selected_card = null;
+            }
+            else { 
+                selected_card = card;
+                time_current_card_selected = 0;
+            }
+
         }
         else if(Input.GetMouseButtonUp(0)) {
             // if released, check if it fulfills a valid action, if not, return 
             // the card to your hand
+
             if(selected_card != null) { 
-                selected_card.GoToBasePosition();
+                EventBus.Publish(new TakeCardActionEvent(cur_hex_tile, selected_card));
+                //selected_card.GoToBasePosition();
+
+                selected_card.SetAlpha(1);
             }
 
             selected_card = null;
@@ -85,7 +118,22 @@ public class CameraSelectionRaycaster : MonoBehaviour
             Vector3 mouse_position = ScreenToRectPos(selected_card.GetComponent<RectTransform>().parent.GetComponent<RectTransform>(), Input.mousePosition);
             selected_card.GetComponent<RectTransform>().anchoredPosition = mouse_position;
 
-            // TODO: Highlight valid game actions
+            if(mouse_position.y < 280) { 
+                // card is behind the border
+                time_current_card_selected -= Time.deltaTime * 2;
+            }
+            else { 
+                time_current_card_selected += Time.deltaTime;
+
+
+                if(cur_hex_tile != null) {
+                    EventBus.Publish(new HighlightCardActionEvent(cur_hex_tile, selected_card));
+                }
+            }
+
+            float alpha = 1 - Mathf.Clamp01(time_current_card_selected / time_before_transparent_s);
+
+            selected_card.SetAlpha(alpha);
         }
     }
 
@@ -95,21 +143,21 @@ public class CameraSelectionRaycaster : MonoBehaviour
         anchorPos= new Vector2(anchorPos.x / rect_transform.lossyScale.x, anchorPos.y / rect_transform.lossyScale.y);
         return anchorPos;
     }
-
+    
     //Returns 'true' if we touched or hovering on Unity UI element.
-    public bool IsPointerOverUIElement()
+    public bool IsPointerOverLayerElement(int layer)
     {
-        return IsPointerOverUIElement(GetEventSystemRaycastResults());
+        return IsPointerOverLayerElement(GetEventSystemRaycastResults(), layer);
     }
 
 
     //Returns 'true' if we touched or hovering on Unity UI element.
-    private bool IsPointerOverUIElement(List<RaycastResult> eventSystemRaysastResults)
+    private bool IsPointerOverLayerElement(List<RaycastResult> eventSystemRaysastResults, int layer)
     {
         for (int index = 0; index < eventSystemRaysastResults.Count; index++)
         {
             RaycastResult curRaysastResult = eventSystemRaysastResults[index];
-            if (curRaysastResult.gameObject.layer == ui_layer)
+            if (curRaysastResult.gameObject.layer == layer)
                 return true;
         }
         return false;
@@ -121,7 +169,7 @@ public class CameraSelectionRaycaster : MonoBehaviour
         for (int index = 0; index < hits.Count; index++)
         {
             RaycastResult curRaysastResult = hits[index];
-            if (curRaysastResult.gameObject.layer == ui_layer) {
+            if (curRaysastResult.gameObject.layer == hand_card_layer) {
                 GameObject hit_ui_elem = curRaysastResult.gameObject;
                 Card highlight_card = hit_ui_elem.GetComponentInParent<Card>();
 

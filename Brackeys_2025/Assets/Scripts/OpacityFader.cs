@@ -24,11 +24,12 @@ public class OpacityFader : MonoBehaviour
         
     }
 
-    IEnumerator LoopOpacity() {
-        int idx = 0;
-        while(true) {
-            mesh_renderer.material.color = Color.blue;
+    public void SetColor(Color new_color) {
+        current_color = new_color;
+    }
 
+    IEnumerator LoopOpacity() {
+        while(true) {
             float progress = 0;
             float start_time = Time.time;
             while(progress < 1) {
@@ -58,18 +59,6 @@ public class OpacityFader : MonoBehaviour
             }
 
             yield return null;
-
-            idx += 1;
-
-            if(idx % 20 == 6) {
-                current_color = Color.red;
-            }
-            if(idx % 20 == 12) {
-                current_color = Color.green;
-            }
-            if(idx % 20 == 19) {
-                current_color = Color.white;
-            }
         }
     }
 }

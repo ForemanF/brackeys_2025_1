@@ -21,7 +21,10 @@ public enum TileMesh {
     Stone,
     Sand,
     Water,
-    Dirt
+    Dirt,
+    Tower,
+    Hut,
+    Mine
 }
 
 public class HexTile : MonoBehaviour
@@ -50,6 +53,8 @@ public class HexTile : MonoBehaviour
     List<HexTile> neighbors = null;
 
     GameObject fow = null;
+
+    Mesh my_actual_mesh;
 
     public void SetOffsetCoords(int r, int c) {
         offset_coords = new Vector2Int(r, c);
@@ -103,6 +108,19 @@ public class HexTile : MonoBehaviour
     public void SetTileMesh(TileMesh new_tile_mesh, Mesh new_mesh) {
         tile_mesh = new_tile_mesh;
         mesh_filter.mesh = new_mesh;
+        my_actual_mesh = new_mesh;
+    }
+
+    public void SetTileMesh(HexMeshTuple hex_mesh_tuple) {
+        SetTileMesh(hex_mesh_tuple.tile_mesh, hex_mesh_tuple.mesh);
+    }
+
+    public void SetTemporaryMesh(Mesh temp_mesh) {
+        mesh_filter.mesh = temp_mesh;
+    }
+
+    public void RefreshTile() {
+        mesh_filter.mesh = my_actual_mesh;
     }
 
     public void SetFow(GameObject obj) {
