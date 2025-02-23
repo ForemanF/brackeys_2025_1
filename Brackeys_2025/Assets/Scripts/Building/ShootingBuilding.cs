@@ -4,11 +4,6 @@ using UnityEngine;
 
 public class ShootingBuilding : Building
 {
-    [SerializeField]
-    int range = 2;
-
-    [SerializeField]
-    int strength = 1;
 
     [SerializeField]
     GameObject bullet_prefab;
@@ -18,20 +13,19 @@ public class ShootingBuilding : Building
     [SerializeField]
     Vector3 vert_offset;
 
-    public void SetStrength(int _strength) {
-        strength = _strength;
-    }
+    public override IEnumerator ProcessBuildingAttack(HexTile nearest_enemy)
+    {
+        if(nearest_enemy == null) {
+            yield break;
+        }
 
-    public void SetRange(int _range) {
-        range = _range;
-    }
-
-    public override IEnumerator ProcessBuildingAttack(HexTile nearest_enemy) {
         float distance = Utilities.CubeDistance(nearest_enemy.GetCubeCoords(), current_tile.GetCubeCoords());
 
-        if(distance <= range) { 
+        if (distance <= special_value)
+        {
             Debug.Log("Fire");
-            if(bullet_obj == null) { 
+            if (bullet_obj == null)
+            {
                 bullet_obj = Instantiate(bullet_prefab, transform.position, Quaternion.identity);
             }
             bullet_obj.SetActive(true);
@@ -51,3 +45,4 @@ public class ShootingBuilding : Building
         yield return null;
     }
 }
+

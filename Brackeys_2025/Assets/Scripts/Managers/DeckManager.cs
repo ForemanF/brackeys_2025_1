@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
 
-[System.Serializable] public class IntToCardAction { public int id; public CardAction card_action; }
+[System.Serializable] public class IntToCardAction { public int id; public CardAction card_action; public int starting_amt = 1; }
 
 public class DeckManager : MonoBehaviour
 {
@@ -26,10 +26,13 @@ public class DeckManager : MonoBehaviour
 
     List<Card> all_cards;
 
+    [SerializeField]
     List<Card> hand;
 
+    [SerializeField]
     List<Card> draw_pile;
 
+    [SerializeField]
     List<Card> discard_pile;
 
     [SerializeField]
@@ -57,9 +60,10 @@ public class DeckManager : MonoBehaviour
     [SerializeField]
     TextMeshProUGUI hand_count_text;
 
-
     int hand_card_layer;
     int non_hand_card_layer;
+
+    Card stronghold_card;
 
     // Start is called before the first frame update
     void Start()
@@ -74,7 +78,7 @@ public class DeckManager : MonoBehaviour
         }
 
         all_cards = new List<Card>();
-        CreateCards();
+        CreateCards(int_to_card_action_list);
 
         hand = new List<Card>();
         draw_pile = new List<Card>();
@@ -93,11 +97,33 @@ public class DeckManager : MonoBehaviour
         discard_card_sub = EventBus.Subscribe<DiscardCardEvent>(_OnDiscardCard);
     }
 
+    public IEnumerator BringStrongholdToHand() {
+        draw_pile.Remove(stronghold_card);
+        hand.Add(stronghold_card);
+
+        List<Vector3> card_positions = GetCardPositions(1);
+
+        stronghold_card.transform.SetParent(hand_rt, true);
+        stronghold_card.GoToPosition(card_positions[0]);
+        stronghold_card.SetBasePosition(card_positions[0]);
+        stronghold_card.SetBoundingBoxLayer(hand_card_layer);
+        yield return null;
+    
+    }
+
     void UpdateHandCountText() {
         hand_count_text.text = hand.Count.ToString() + "/" + max_hand_size.ToString();
     }
 
     void _OnDiscardCard(DiscardCardEvent e) {
+        if(e.discarded_card.GetCardAction().name == "Stronghold") {
+            e.discarded_card.SetBoundingBoxLayer(non_hand_card_layer);
+            hand.Remove(e.discarded_card);
+            discard_pile.Remove(e.discarded_card);
+            e.discarded_card.GetComponent<RectTransform>().anchoredPosition = new Vector3(1000, 1000, 0);
+            e.discarded_card.SetBasePosition(new Vector3(1000, 1000));
+            return;
+        }
         HandleDiscardCard(e.discarded_card);
     }
 
@@ -108,6 +134,12 @@ public class DeckManager : MonoBehaviour
         return false;
     }
 
+    public void IncreaseMaxHandSize(int amount) {
+        max_hand_size += amount;
+
+        UpdateHandCountText();
+    }
+
     public IEnumerator DrawCards(int num_cards) {
         for(int i = 0; i < num_cards; ++i) { 
             // check to see if hand is full
@@ -116,31 +148,67 @@ public class DeckManager : MonoBehaviour
                 yield break;
             }
 
+            if(draw_pile.Count == 0) {
+                // move the discard pile to the draw pile & shuffle
+                DiscardToDrawPile();
+                Shuffle();
+                yield return new WaitForSeconds(draw_time_s * 2);
+            }
+
             HandleDrawCard();
 
             yield return new WaitForSeconds(draw_time_s);
         }
-        
+        yield return null;
     }
 
-    void CreateCards() {
+    void DiscardToDrawPile() {
+        foreach(Card card in discard_pile) {
+            draw_pile.Add(card);
+        }
+        discard_pile.Clear();
+
+        Vector3 ending_position = Vector3.zero;
+
+        // shift the cards already in the hand
+        for(int i = 0; i < draw_pile.Count; ++i) {
+            draw_pile[i].transform.SetParent(draw_pile_rt, true);
+
+            float varied_draw_time = (i + 1) / draw_pile.Count * draw_time_s;
+
+            draw_pile[i].GoToPosition(ending_position, varied_draw_time);
+        }
+
+        for(int i = 0; i < hand.Count; ++i)
+        {
+            draw_pile[i].SetBasePosition(ending_position);
+        }
+    }
+
+    void CreateCards(IntToCardAction[] starting_cards) {
         int uid = 0;
         // Creates the actual card game objects
-        for(int i = 0; i < num_cards; ++i) {
-            GameObject new_card = Instantiate(card_pf, card_parent.transform);
-            Card new_card_card = new_card.GetComponent<Card>();
-            new_card_card.SetCardId(uid);
+        for(int i = 0; i < starting_cards.Length; ++i) {
+            for(int j = 0; j < starting_cards[i].starting_amt; ++j) { 
+                GameObject new_card = Instantiate(card_pf, card_parent.transform);
+                Card new_card_card = new_card.GetComponent<Card>();
+                new_card_card.SetCardId(uid);
 
-            new_card_card.SetCardAction(card_action_dict[1]); // always set to 1 for now
+                new_card_card.SetCardAction(starting_cards[i].card_action); 
 
-            new_card.name = "Card " + uid;
+                new_card.name = "Card " + uid;
 
-            new_card.transform.SetParent(draw_pile_rt, false);
-            new_card.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
+                new_card.transform.SetParent(draw_pile_rt, false);
+                new_card.GetComponent<RectTransform>().anchoredPosition = Vector3.zero;
 
-            all_cards.Add(new_card_card);
+                all_cards.Add(new_card_card);
 
-            uid++;
+                uid++;
+
+                if(new_card_card.GetCardAction().name == "Stronghold") {
+                    stronghold_card = new_card_card;
+                }
+            }
         }
     }
 
@@ -155,6 +223,10 @@ public class DeckManager : MonoBehaviour
         }
     }
 
+    public void StrongholdCard(Card card) {
+        discard_pile.Remove(card);
+    }
+    
     void HandleDrawCard() {
         int starting_hand_size = hand.Count;
         List<Vector3> ending_positions = GetCardPositions(starting_hand_size + 1);

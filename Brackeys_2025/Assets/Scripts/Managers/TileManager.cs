@@ -42,6 +42,9 @@ public class TileManager : MonoBehaviour
     BiomeTuple[] tile_biomes;
 
     [SerializeField]
+    List<TileMesh> randomizable_meshes;
+
+    [SerializeField]
     HexMeshTuple[] tile_meshes;
 
     Dictionary<TileBiome, Material> tile_biomes_dict;
@@ -51,6 +54,43 @@ public class TileManager : MonoBehaviour
 
     HexTile previous_hex_tile_action = null;
     Card previous_card= null;
+
+    // Placement Rules
+    Dictionary<Building, List<Building>> adjacent_building_restrictions;
+
+    Dictionary<Building, List<TileMesh>> building_mesh_restrictions;
+
+    Dictionary<Building, TileBiome> building_biome_restrictions;
+
+    [SerializeField]
+    List<Building> buildings;
+    [SerializeField]
+    List<TileMesh> building_tile_meshes;
+
+    public Building GetRandomBuilding(Building not_this_building) {
+        Building building = buildings[Random.Range(0, buildings.Count)];
+
+        while(building == not_this_building) { 
+            building = buildings[Random.Range(0, buildings.Count)];
+        }
+
+        return building;
+    }
+
+    public TileMesh GetRandomTileMesh() { 
+        TileMesh tile_mesh = randomizable_meshes[Random.Range(0, randomizable_meshes.Count)];
+
+        return tile_mesh;
+    }
+
+    public TileBiome GetRandomBiome() { 
+        if(Random.Range(0, 1f) < 0.5f) {
+            return TileBiome.Winter;
+        }
+        else {
+            return TileBiome.Desert;
+        }
+    }
 
     private void Awake()
     {
@@ -62,6 +102,16 @@ public class TileManager : MonoBehaviour
         tile_meshes_dict = new Dictionary<TileMesh, Mesh>();
         foreach(HexMeshTuple hex_mesh_tuple in tile_meshes) {
             tile_meshes_dict[hex_mesh_tuple.tile_mesh] = hex_mesh_tuple.mesh;
+        }
+
+        adjacent_building_restrictions = new Dictionary<Building, List<Building>>();
+        building_mesh_restrictions = new Dictionary<Building, List<TileMesh>>();
+        building_biome_restrictions = new Dictionary<Building, TileBiome>();
+
+        foreach(Building building in buildings) {
+            adjacent_building_restrictions[building] = new List<Building>();
+            building_mesh_restrictions[building] = new List<TileMesh>();
+            building_biome_restrictions[building] = TileBiome.Nothing;
         }
 
         CreateGrid();
@@ -81,6 +131,71 @@ public class TileManager : MonoBehaviour
             List<HexTile> neighbors = GetNeighbors(hex_tile);
             hex_tile.SetNeighbors(neighbors);
         }
+    }
+
+    public bool DoesSatisfyAllRestrictions(TileMesh building_mesh, HexTile hex_tile) {
+        Building building = null;
+
+        for(int i = 0; i < building_tile_meshes.Count; ++i) { 
+            if(building_mesh == building_tile_meshes[i]) { 
+                building = buildings[i];
+                break;
+            }
+        }
+
+        if(building == null) {
+            return true;
+        }
+
+
+        if(hex_tile.GetTileBiome() == building_biome_restrictions[building]) {
+            return false;
+        }
+
+        // individual hex requirements
+        foreach(TileMesh tile_mesh in building_mesh_restrictions[building]) { 
+            if(hex_tile.GetTileMesh() == tile_mesh) {
+                return false;
+            }
+        }
+
+        // neighbor requirements
+        List<Building> adj_building_types = adjacent_building_restrictions[building];
+        foreach(Building adj_requirement in adj_building_types) {
+            bool check = false;
+            foreach(HexTile adj_hex in hex_tile.GetNeighbors()) {
+                GameObject adj_object = adj_hex.GetObjectOnHex();
+                if(adj_object == null) {
+                    continue;
+                }
+                if(adj_object.TryGetComponent<Building>(out Building adj_building)) { 
+                    if(adj_building == adj_requirement) {
+                        check = true;
+                        break;
+                    }
+                }
+                else {
+                    continue;
+                }
+            }
+            if(check == false) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    public void AddAdjRestriction(Building building, Building adj_requirement) {
+        adjacent_building_restrictions[building].Add(adj_requirement);
+    }
+
+    public void AddTileMeshRestriction(Building building, TileMesh mesh_restriction) {
+        building_mesh_restrictions[building].Add(mesh_restriction);
+    }
+
+    public void SetBiomeRestriction(Building building, TileBiome biome_restriction) {
+        building_biome_restrictions[building] = biome_restriction;
     }
 
     private void Start()
@@ -120,10 +235,13 @@ public class TileManager : MonoBehaviour
         // Handle the card action
         CardAction card_action = e.card.GetCardAction();
 
-        TileMesh tile_mesh = card_action.GetTileMesh();
-        Mesh temp_mesh = tile_meshes_dict[tile_mesh];
+        if(card_action.GetCardType() == CardAction.CardType.Building) { 
+            TileMesh tile_mesh = card_action.GetTileMesh();
+            Mesh temp_mesh = tile_meshes_dict[tile_mesh];
+            card_action.DisplayCardAction(e.hex_tile, temp_mesh);
+        }
 
-        bool is_valid = card_action.DisplayCardAction(e.hex_tile, temp_mesh);
+        bool is_valid = card_action.IsValidPlacement(e.hex_tile, this, card_action.GetTileMesh());
 
         if(is_valid) { 
             highlight_object.GetComponent<OpacityFader>().SetColor(Color.green);
@@ -139,7 +257,7 @@ public class TileManager : MonoBehaviour
     void _OnTakeCardAction(TakeCardActionEvent e) { 
         CardAction card_action = e.card.GetCardAction();
 
-        bool is_valid = card_action.IsValidPlacement(e.hex_tile);
+        bool is_valid = card_action.IsValidPlacement(e.hex_tile, this, card_action.GetTileMesh());
 
         if(is_valid == false) {
             e.card.GoToBasePosition();
@@ -248,6 +366,22 @@ public class TileManager : MonoBehaviour
                 //}
             }
         }
+    }
+
+    public void RandomizeRandomTile() {
+        HexTile hex_tile = GetRandomValid();
+
+        if(Random.Range(0, 1f) < 0.33f) {
+            TileBiome tile_biome = GetRandomBiome();
+            if(Random.Range(0, 1f) < 0.5f) {
+                tile_biome = TileBiome.Basic;
+            }
+            hex_tile.SetTileBiome(tile_biome, tile_biomes_dict[tile_biome]);
+        }
+
+        TileMesh rand_mesh = randomizable_meshes[Random.Range(0, randomizable_meshes.Count)];
+
+        hex_tile.SetTileMesh(rand_mesh, tile_meshes_dict[rand_mesh]);
     }
 
     public HexTile GetRandomValid() {

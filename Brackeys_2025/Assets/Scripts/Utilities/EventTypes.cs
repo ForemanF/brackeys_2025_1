@@ -96,6 +96,35 @@ public class ResetTileEvent
     }
 }
 
+public class IncreaseEnergyEvent
+{
+    public int energy_increase;
+
+    public IncreaseEnergyEvent(int _energy_increase) {
+        energy_increase = _energy_increase;
+    }
+}
+
+public class DrawCardEvent
+{
+    public int amount;
+
+    public DrawCardEvent(int _amount) {
+        amount = _amount;
+    }
+}
+
+public class SpawnSoldierEvent
+{
+    public HexTile location;
+    public GameObject soldier_prefab;
+
+    public SpawnSoldierEvent(HexTile _location, GameObject _soldier_prefab) {
+        location = _location;
+        soldier_prefab = _soldier_prefab;
+    }
+}
+
 public class NextTurnEvent
 {
 

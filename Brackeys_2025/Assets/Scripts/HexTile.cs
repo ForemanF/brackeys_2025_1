@@ -6,7 +6,8 @@ using UnityEngine;
 public enum TileBiome { 
     Basic,
     Winter,
-    Desert
+    Desert,
+    Nothing
 }
 
 public enum TileState { 
@@ -25,7 +26,10 @@ public enum TileMesh {
     Dirt,
     Tower,
     Hut,
-    Mine
+    Mine,
+    Stronghold,
+    Barracks,
+    Windmill
 }
 
 public class HexTile : MonoBehaviour

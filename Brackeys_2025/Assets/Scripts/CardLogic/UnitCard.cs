@@ -4,15 +4,10 @@ using UnityEngine;
 
 public class UnitCard : CardAction
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    [SerializeField]
+    GameObject soldier_prefab;
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    override public void PerformCardAction(HexTile hex_tile, HexMeshTuple hex_mesh_tuple) {
+        EventBus.Publish(new SpawnSoldierEvent(hex_tile, soldier_prefab));
     }
 }

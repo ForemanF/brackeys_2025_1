@@ -44,12 +44,78 @@ public class Card : MonoBehaviour
     [SerializeField]
     Image card_bounding_box;
 
+    [SerializeField]
+    TextMeshProUGUI cost_text;
+
+    [SerializeField]
+    TextMeshProUGUI heart_text;
+
+    [SerializeField]
+    GameObject heart_icon;
+
+    [SerializeField]
+    TextMeshProUGUI damage_text;
+
+    [SerializeField]
+    GameObject damage_icon;
+
+    [SerializeField]
+    GameObject special_icon;
+
+    [SerializeField]
+    SVGImage special_svg;
+
+    [SerializeField]
+    TextMeshProUGUI special_value_text;
+
+    [SerializeField]
+    RawImage card_image;
+
+    [SerializeField]
+    TextMeshProUGUI card_title_text;
+
+    [SerializeField]
+    TextMeshProUGUI card_desc_text;
+
+
     public void SetBoundingBoxLayer(int layer) {
         card_bounding_box.gameObject.layer = layer;
     }
 
     public void SetCardAction(CardAction _card_action) {
         card_action = _card_action;
+
+        cost_text.text = card_action.GetCost().ToString();
+
+        heart_text.text = card_action.GetHealth().ToString();
+        if(card_action.GetHealth() >= 1) {
+            heart_icon.SetActive(true);
+        }
+        else { 
+            heart_icon.SetActive(false);
+        }
+
+        if(card_action.GetSpecialSVG() != null) {
+            special_svg.sprite = card_action.GetSpecialSVG();
+            special_value_text.text = card_action.GetSpecialValue().ToString();
+            special_icon.SetActive(true);
+        }
+        else { 
+            special_icon.SetActive(false);
+        }
+
+        damage_text.text = card_action.GetStrength().ToString();
+        if(card_action.GetStrength() >= 1) {
+            damage_icon.SetActive(true);
+        }
+        else { 
+            damage_icon.SetActive(false);
+        }
+
+        card_image.texture = card_action.GetTexture();
+
+        card_title_text.text = card_action.name;
+        card_desc_text.text = card_action.GetDescription();
     }
 
     public CardAction GetCardAction() {

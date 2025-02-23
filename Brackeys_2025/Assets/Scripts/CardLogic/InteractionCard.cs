@@ -4,15 +4,39 @@ using UnityEngine;
 
 public class InteractionCard : CardAction
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+    [SerializeField]
+    Faction affected_faction = Faction.Player;
+
+    public void SetAffectedFaction(Faction faction) {
+        affected_faction = faction;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    override public bool IsValidPlacement(HexTile hex_tile, TileManager tile_manager, TileMesh building_mesh) {
+        if(hex_tile == false) {
+            return false;
+        }
+        GameObject game_obj = hex_tile.GetObjectOnHex();
+
+        if(game_obj == null) {
+            return false;
+        }
+
+        return game_obj.GetComponent<HasFaction>().GetFaction() == affected_faction;
+    }
+
+    override public void PerformCardAction(HexTile hex_tile, HexMeshTuple hex_mesh_tuple) {
+        HasHealth has_health = hex_tile.GetObjectOnHex().GetComponent<HasHealth>();
+        if(affected_faction == Faction.Enemy) {
+            Debug.Log("Doing Damage");
+            // do damage
+            has_health.TakeDamage(strength);
+        }
+        else { 
+            Debug.Log("Healing");
+            // heal
+            has_health.Heal(health);
+
+        }
+
     }
 }

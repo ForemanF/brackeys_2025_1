@@ -18,6 +18,9 @@ public class Unit : MonoBehaviour
 
     HasFaction has_faction;
 
+    [SerializeField]
+    float movement_speed = 0.5f;
+
     // Start is called before the first frame update
     void Start()
     {
@@ -125,7 +128,7 @@ public class Unit : MonoBehaviour
 
             HideLogic(next_tile);
 
-            yield return LerpUtilities.LerpToPosition(transform, next_pos, 1);
+            yield return LerpUtilities.LerpToPosition(transform, next_pos, movement_speed);
             next_tile.OccupyHex(gameObject, TileState.HasUnit);
 
             current_tile = next_tile;
