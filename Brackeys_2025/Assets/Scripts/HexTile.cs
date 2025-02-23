@@ -10,8 +10,9 @@ public enum TileBiome {
 }
 
 public enum TileState { 
-    Default,
-    Building
+    Empty,
+    Building,
+    HasUnit
 }
 
 public enum TileMesh { 
@@ -33,7 +34,7 @@ public class HexTile : MonoBehaviour
     TileBiome tile_biome = TileBiome.Basic;
 
     [SerializeField]
-    TileState tile_state = TileState.Default;
+    TileState tile_state = TileState.Empty;
 
     [SerializeField]
     TileMesh tile_mesh = TileMesh.Grass;
@@ -56,8 +57,26 @@ public class HexTile : MonoBehaviour
 
     Mesh my_actual_mesh;
 
+    // refers to the object that is on a tile, should only be one
+    // can be a building or a unit
+    GameObject attached_object = null;
+
     public void SetOffsetCoords(int r, int c) {
         offset_coords = new Vector2Int(r, c);
+    }
+
+    public void OccupyHex(GameObject obj, TileState _tile_state) {
+        attached_object = obj;
+        tile_state = _tile_state;
+    }
+
+    public void EmptyHex() {
+        attached_object = null;
+        tile_state = TileState.Empty;
+    }
+
+    public GameObject GetObjectOnHex() {
+        return attached_object;
     }
 
     public Vector2Int GetOffsetCoords() {
@@ -92,9 +111,9 @@ public class HexTile : MonoBehaviour
         return tile_mesh;
     }
 
-    public void SetTileState(TileState new_tile_state) {
-        tile_state = new_tile_state;
-    }
+    //public void SetTileState(TileState new_tile_state) {
+    //    tile_state = new_tile_state;
+    //}
 
     public void HighlightHex() {
         transform.localScale = 1.1f * Vector3.one;

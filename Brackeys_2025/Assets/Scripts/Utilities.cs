@@ -34,4 +34,13 @@ public class Utilities : MonoBehaviour
             child.gameObject.layer = layer;
         }
     }
+
+    public static Vector3Int CubeSubtract(Vector3Int a, Vector3Int b) {
+        return new Vector3Int(a.x - b.x, a.y - b.y, a.z - b.z);
+    }
+
+    public static float CubeDistance(Vector3Int a, Vector3Int b) {
+        Vector3Int vec = CubeSubtract(a, b);
+        return (Mathf.Abs(vec.x) + Mathf.Abs(vec.y) + Mathf.Abs(vec.z)) / 2.0f;
+    }
 }

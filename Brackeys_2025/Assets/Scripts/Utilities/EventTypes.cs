@@ -50,7 +50,50 @@ public class RevealTileEvent
     public RevealTileEvent(HexTile _revealed_tile) {
         revealed_tile = _revealed_tile;
     }
+}
 
+public class ParticleBurstEvent
+{
+    public Vector3 position;
+    public BurstType burst_type;
+    public int emit_amt;
+
+    public ParticleBurstEvent(Vector3 _position, BurstType _burst_type, int _emit_amt) {
+        position = _position;
+        burst_type = _burst_type;
+        emit_amt = _emit_amt;
+    }
+}
+
+public class DestroyedFactionObjectEvent
+{
+    public Faction faction;
+    public GameObject game_object;
+
+    public DestroyedFactionObjectEvent(Faction _faction, GameObject _game_object) {
+        faction = _faction;
+        game_object = _game_object;
+    }
+}
+
+public class CreateBuildingEvent
+{
+    public BuildingCard building_card;
+    public HexTile hex_tile;
+
+    public CreateBuildingEvent(BuildingCard _building_card, HexTile _hex_tile) {
+        building_card = _building_card;
+        hex_tile = _hex_tile;
+    }
+}
+
+public class ResetTileEvent
+{
+    public HexTile hex_tile;
+
+    public ResetTileEvent(HexTile _hex_tile) {
+        hex_tile = _hex_tile;
+    }
 }
 
 public class NextTurnEvent
@@ -60,3 +103,5 @@ public class NextTurnEvent
     }
 
 }
+
+

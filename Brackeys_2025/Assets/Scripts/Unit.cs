@@ -6,33 +6,33 @@ using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
-    public enum Faction { 
-        Player,
-        Enemy
-    }
+    [SerializeField]
+    int strength = 1;
 
     HexTile current_tile;
     List<HexTile> path = null;
 
     Vector3 offset = Vector3.zero;
 
-    [SerializeField]
-    Faction my_faction = Faction.Enemy;
-
     GameObject look_at_obj;
+
+    HasFaction has_faction;
 
     // Start is called before the first frame update
     void Start()
     {
         look_at_obj = new GameObject("LookAtObj");
+
+        has_faction = GetComponent<HasFaction>();
     }
 
     public IEnumerator ProcessTurn() {
-        bool can_attack = CanAttack();
+        HideLogic(current_tile);
+        GameObject opposing_obj = CanAttack();
 
-        if (can_attack == true)
+        if (opposing_obj != null)
         {
-            yield return Attack();
+            yield return Attack(opposing_obj);
         }
         else { 
             yield return HandleMovement();
@@ -41,20 +41,47 @@ public class Unit : MonoBehaviour
         yield return null;
     }
 
-    IEnumerator Attack() {
+    public HexTile GetHex() {
+        return current_tile;
+    }
+
+    IEnumerator Attack(GameObject obj_to_attack) {
+        HasHealth obj_to_attack_health = obj_to_attack.GetComponent<HasHealth>();
+
+        obj_to_attack_health.TakeDamage(strength);
+
+        // TODO: Add an animation of sorts
+        Debug.Log("Did Damage");
+
         yield return null;
     }
 
-    bool CanAttack() {
-        // attacks an adjacent tile, returns false if it can't find anything
+    GameObject CanAttack() {
+        // check if an adjacent tile has an opposing team's unit on it
+        List<HexTile> neighbors = current_tile.GetNeighbors();
+        foreach(HexTile adjacent_tile in neighbors) {
+            GameObject obj_on_hex = adjacent_tile.GetObjectOnHex();
+            if(obj_on_hex == null) {
+                continue;
+            }
 
-        return false;
+            if(obj_on_hex.TryGetComponent(out HasFaction adj_faction)) { 
+                if(has_faction.GetFaction() != adj_faction.GetFaction()) {
+                    return obj_on_hex;
+                } 
+            }
+
+        }
+
+        return null;
     }
 
     public void SetPosition(HexTile hex_tile, Vector3 _offset) {
         offset = _offset;
         current_tile = hex_tile;
         transform.position = current_tile.transform.position + offset;
+
+        current_tile.OccupyHex(gameObject, TileState.HasUnit);
 
         StartCoroutine(ProcessOnNextFrame(current_tile));
     }
@@ -79,8 +106,14 @@ public class Unit : MonoBehaviour
     {
         if (path != null && path.Count != 0)
         {
-            Debug.Log("Moving");
+            // leaving this hex
+            current_tile.EmptyHex();
+
             HexTile next_tile = path[path.Count - 1];
+
+            if(current_tile == next_tile) {
+                Debug.LogError("Moving to the same hex, not good!");
+            }
 
             Vector3 next_pos = next_tile.transform.position + offset;
 
@@ -93,6 +126,7 @@ public class Unit : MonoBehaviour
             HideLogic(next_tile);
 
             yield return LerpUtilities.LerpToPosition(transform, next_pos, 1);
+            next_tile.OccupyHex(gameObject, TileState.HasUnit);
 
             current_tile = next_tile;
             path.RemoveAt(path.Count - 1);
@@ -110,9 +144,7 @@ public class Unit : MonoBehaviour
     }
 
     void HideLogic(HexTile next_tile) {
-        Debug.Log(my_faction);
-
-        if(my_faction == Faction.Enemy) { 
+        if(GetComponent<HasFaction>().GetFaction() == Faction.Enemy) { 
             if (next_tile.IsRevealed())
             {
                 Utilities.SetLayerAndChildren(transform, "Default");

@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using TMPro;
 
 public class CameraSelectionRaycaster : MonoBehaviour
 {
@@ -17,6 +18,12 @@ public class CameraSelectionRaycaster : MonoBehaviour
     // card that is actively clicked and moving
     [SerializeField]
     Card selected_card = null;
+
+    [SerializeField]
+    RectTransform health_display = null;
+
+    [SerializeField]
+    TextMeshProUGUI health_text = null;
 
     [SerializeField]
     float ui_back_height = 280;
@@ -71,6 +78,24 @@ public class CameraSelectionRaycaster : MonoBehaviour
 
         if(highlighted_tile != null) { 
             EventBus.Publish(new HighlightTileEvent(highlighted_tile));
+        }
+
+        if(highlighted_tile != null) {
+            // get health of the tile
+            GameObject obj_on_hex = highlighted_tile.GetObjectOnHex();
+            if(obj_on_hex != null && obj_on_hex.TryGetComponent<HasHealth>(out HasHealth has_health)) {
+                health_display.gameObject.SetActive(true);
+                int health = has_health.GetHealth();
+                health_text.text = health.ToString();
+
+                Transform tf = highlighted_tile.transform.GetChild(1);
+                Vector3 hex_position = Camera.main.WorldToScreenPoint(tf.position);
+                Vector3 mouse_position = ScreenToRectPos(health_display.parent.GetComponent<RectTransform>(), hex_position);
+                health_display.anchoredPosition = mouse_position;
+            }
+            else { 
+                health_display.gameObject.SetActive(false);
+            }
         }
     }
 

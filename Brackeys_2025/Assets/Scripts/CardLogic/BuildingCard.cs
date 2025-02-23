@@ -7,17 +7,25 @@ public class BuildingCard : CardAction
     [SerializeField]
     TileMesh building_mesh;
 
+    [SerializeField]
+    int health = 3;
 
-    // Start is called before the first frame update
-    void Start()
-    {
-        
+    [SerializeField]
+    int strength = 1;
+
+    [SerializeField]
+    int range = 0;
+
+    public int GetHealth() {
+        return health;
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+    public int GetStrength() {
+        return strength;
+    }
+
+    public int GetRange() {
+        return range;
     }
 
     override public bool DisplayCardAction(HexTile hex_tile, Mesh temp_mesh) {
@@ -30,15 +38,13 @@ public class BuildingCard : CardAction
         return building_mesh;
     }
 
-    override public bool IsValidPlacement(HexTile hex_tile) {
-        if(hex_tile.GetTileMesh() == TileMesh.Water) {
-            return false;
-        }
-
-        return hex_tile.IsRevealed();
-    }
+    //override public bool IsValidPlacement(HexTile hex_tile) {
+    //    return hex_tile.IsRevealed();
+    //}
 
     override public void PerformCardAction(HexTile hex_tile, HexMeshTuple hex_mesh_tuple) {
         hex_tile.SetTileMesh(hex_mesh_tuple);
+
+        EventBus.Publish(new CreateBuildingEvent(this, hex_tile));
     }
 }

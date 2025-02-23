@@ -38,6 +38,6 @@ public class CardAction : MonoBehaviour
     }
 
     virtual public bool IsValidPlacement(HexTile hex_tile) {
-        return hex_tile.IsRevealed();
+        return hex_tile.IsRevealed() && hex_tile.GetTileState() == TileState.Empty;
     }
 }

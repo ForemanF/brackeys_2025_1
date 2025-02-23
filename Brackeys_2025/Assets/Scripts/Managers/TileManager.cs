@@ -33,6 +33,7 @@ public class TileManager : MonoBehaviour
     Subscription<HighlightCardActionEvent> highlight_card_action_sub;
     Subscription<TakeCardActionEvent> take_card_action_sub;
     Subscription<RevealTileEvent> reveal_tile_sub;
+    Subscription<ResetTileEvent> reset_tile_sub;
 
     [SerializeField]
     GameObject highlight_object;
@@ -88,10 +89,15 @@ public class TileManager : MonoBehaviour
         highlight_card_action_sub = EventBus.Subscribe<HighlightCardActionEvent>(_OnHighlightCardAction);
         take_card_action_sub = EventBus.Subscribe<TakeCardActionEvent>(_OnTakeCardAction);
         reveal_tile_sub = EventBus.Subscribe<RevealTileEvent>(_OnRevealTile);
+        reset_tile_sub = EventBus.Subscribe<ResetTileEvent>(_OnResetTile);
     }
 
     void _OnRevealTile(RevealTileEvent e) {
         RevealTile(e.revealed_tile);
+    }
+
+    void _OnResetTile(ResetTileEvent e) {
+        e.hex_tile.SetTileMesh(TileMesh.Grass, tile_meshes_dict[TileMesh.Grass]);
     }
 
     void _OnHighlightTile(HighlightTileEvent e) {
@@ -217,28 +223,29 @@ public class TileManager : MonoBehaviour
                 // default all tiles to grass
                 hex_tile.SetTileMesh(TileMesh.Grass, tile_meshes_dict[TileMesh.Grass]);
 
-                // temp random tile type
-                if (Random.Range(0f, 1f) < 0.1f)
-                {
-                    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
-                    {
-                        TileBiome new_biome = TileBiome.Winter;
-                        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
-                    }
-                }
-                if (Random.Range(0f, 1f) < 0.1f)
-                {
-                    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
-                    {
-                        TileBiome new_biome = TileBiome.Desert;
-                        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
-                    }
-                }
+                // Legacy random tile allocation
+                //// temp random tile type
+                //if (Random.Range(0f, 1f) < 0.1f)
+                //{
+                //    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
+                //    {
+                //        TileBiome new_biome = TileBiome.Winter;
+                //        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
+                //    }
+                //}
+                //if (Random.Range(0f, 1f) < 0.1f)
+                //{
+                //    if (hex_tile.GetCubeCoords() != Vector3Int.zero)
+                //    {
+                //        TileBiome new_biome = TileBiome.Desert;
+                //        hex_tile.SetTileBiome(new_biome, tile_biomes_dict[new_biome]);
+                //    }
+                //}
 
-                if (Random.Range(0, 1f) < 0.35f) {
-                    TileMesh new_mesh = (TileMesh)Random.Range(0, (int)System.Enum.GetValues(typeof(TileMesh)).Cast<TileMesh>().Max());
-                    hex_tile.SetTileMesh(new_mesh, tile_meshes_dict[new_mesh]);
-                }
+                //if (Random.Range(0, 1f) < 0.35f) {
+                //    TileMesh new_mesh = (TileMesh)Random.Range(0, (int)System.Enum.GetValues(typeof(TileMesh)).Cast<TileMesh>().Max());
+                //    hex_tile.SetTileMesh(new_mesh, tile_meshes_dict[new_mesh]);
+                //}
             }
         }
     }
@@ -246,7 +253,7 @@ public class TileManager : MonoBehaviour
     public HexTile GetRandomValid() {
         int rand_int = Random.Range(0, hex_tiles.Length);
 
-        while (hex_tiles[rand_int].GetTileState() != TileState.Default) { 
+        while (hex_tiles[rand_int].GetTileState() != TileState.Empty) { 
             rand_int = Random.Range(0, hex_tiles.Length);
         }
 
