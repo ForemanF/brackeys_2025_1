@@ -19,10 +19,4 @@ public class HexTileVisual : MonoBehaviour
 
         return parent;
     }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
 }

@@ -127,10 +127,31 @@ public class SpawnSoldierEvent
 
 public class NextTurnEvent
 {
+    public NextTurnEvent() {}
+}
 
-    public NextTurnEvent() {
+public class RevealNearestFogEvent
+{
+    public HexTile source_tile;
+    public int amount;
+
+    public RevealNearestFogEvent(HexTile _source_tile, int _amount) {
+        source_tile = _source_tile;
+        amount = _amount;
     }
+}
 
+public class AudioEvent
+{
+    public AudioType audio_type;
+    public Vector3 position;
+    public float volume;
+
+    public AudioEvent(AudioType _audio_type, Vector3 _position, float _volume = 1) {
+        audio_type = _audio_type;
+        position = _position;
+        volume = _volume;
+    }
 }
 
 

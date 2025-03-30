@@ -23,12 +23,13 @@ public class ShootingBuilding : Building
 
         if (distance <= special_value)
         {
-            Debug.Log("Fire");
             if (bullet_obj == null)
             {
                 bullet_obj = Instantiate(bullet_prefab, transform.position, Quaternion.identity);
             }
             bullet_obj.SetActive(true);
+
+            EventBus.Publish(new AudioEvent(AudioType.Shoot, current_tile.transform.position));
 
             bullet_obj.transform.position = transform.position + vert_offset;
 
@@ -39,7 +40,6 @@ public class ShootingBuilding : Building
             enemy_obj.GetComponent<HasHealth>().TakeDamage(strength);
 
             bullet_obj.SetActive(false);
-            Debug.Log("Done");
         }
 
         yield return null;

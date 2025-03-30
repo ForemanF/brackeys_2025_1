@@ -18,9 +18,10 @@ public class HasHealth : MonoBehaviour
     public void TakeDamage(int amount) {
         health -= amount;
 
+        EventBus.Publish(new AudioEvent(AudioType.Damage, transform.position));
+
         if(health <= 0) {
             StartCoroutine(PlayDeathAffect());
-            Debug.Log("Now has no health");
             return;
         }
 
@@ -39,7 +40,6 @@ public class HasHealth : MonoBehaviour
     }
 
     void PublishBurst(int emit_amt) {
-
         Faction my_faction = GetComponent<HasFaction>().GetFaction();
 
         BurstType burst_type;
@@ -55,5 +55,7 @@ public class HasHealth : MonoBehaviour
 
     public void Heal(int amount) {
         health += amount;
+
+        EventBus.Publish(new AudioEvent(AudioType.Heal, transform.position));
     }
 }

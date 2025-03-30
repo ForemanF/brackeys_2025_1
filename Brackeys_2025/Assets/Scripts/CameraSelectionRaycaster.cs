@@ -31,6 +31,9 @@ public class CameraSelectionRaycaster : MonoBehaviour
     [SerializeField]
     float time_before_transparent_s = 3;
 
+    [SerializeField]
+    AnimationCurve transparent_curve = null;
+
     float time_current_card_selected = 0;
 
     int hand_card_layer;
@@ -80,10 +83,11 @@ public class CameraSelectionRaycaster : MonoBehaviour
             EventBus.Publish(new HighlightTileEvent(highlighted_tile));
         }
 
+        // get health of the tile
         if(highlighted_tile != null) {
-            // get health of the tile
             GameObject obj_on_hex = highlighted_tile.GetObjectOnHex();
-            if(obj_on_hex != null && obj_on_hex.TryGetComponent<HasHealth>(out HasHealth has_health)) {
+
+            if(obj_on_hex != null && highlighted_tile.IsRevealed() && obj_on_hex.TryGetComponent<HasHealth>(out HasHealth has_health)) {
                 health_display.gameObject.SetActive(true);
                 int health = has_health.GetHealth();
                 health_text.text = health.ToString();
@@ -150,13 +154,16 @@ public class CameraSelectionRaycaster : MonoBehaviour
             else { 
                 time_current_card_selected += Time.deltaTime;
 
-
                 if(cur_hex_tile != null) {
                     EventBus.Publish(new HighlightCardActionEvent(cur_hex_tile, selected_card));
                 }
             }
 
-            float alpha = 1 - Mathf.Clamp01(time_current_card_selected / time_before_transparent_s);
+            time_current_card_selected = Mathf.Clamp(time_current_card_selected, 0, time_before_transparent_s);
+
+            float time_percent_passed = Mathf.Clamp01(time_current_card_selected / time_before_transparent_s);
+
+            float alpha = transparent_curve.Evaluate(time_percent_passed);
 
             selected_card.SetAlpha(alpha);
         }

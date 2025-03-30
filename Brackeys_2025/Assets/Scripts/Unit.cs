@@ -49,14 +49,19 @@ public class Unit : MonoBehaviour
     }
 
     IEnumerator Attack(GameObject obj_to_attack) {
+        // Look in the direction of attack
+        LookAtPosition(obj_to_attack.transform.position);
+
         HasHealth obj_to_attack_health = obj_to_attack.GetComponent<HasHealth>();
+
+        Vector3 starting_pos = transform.position;
+
+        // Need to add a vertical component and an animation curve
+        yield return LerpUtilities.LerpToPosition(transform, obj_to_attack.transform.position, 0.3f);
 
         obj_to_attack_health.TakeDamage(strength);
 
-        // TODO: Add an animation of sorts
-        Debug.Log("Did Damage");
-
-        yield return null;
+        yield return LerpUtilities.LerpToPosition(transform, starting_pos, 0.3f);
     }
 
     GameObject CanAttack() {
@@ -73,10 +78,21 @@ public class Unit : MonoBehaviour
                     return obj_on_hex;
                 } 
             }
-
         }
 
         return null;
+    }
+
+    void LookAtPosition(Vector3 target_position, bool maintain_steady_pitch = true) { 
+        Transform look_at = look_at_obj.transform;
+        Vector3 look_position = target_position;
+
+        if(maintain_steady_pitch) {
+            look_position.y = transform.position.y;
+        
+        }
+
+        transform.LookAt(look_position);
     }
 
     public void SetPosition(HexTile hex_tile, Vector3 _offset) {
@@ -119,6 +135,7 @@ public class Unit : MonoBehaviour
             }
 
             Vector3 next_pos = next_tile.transform.position + offset;
+            LookAtPosition(look_at_obj.transform.position);
 
             Transform look_at = look_at_obj.transform;
             look_at.position = next_tile.transform.position;
@@ -143,7 +160,6 @@ public class Unit : MonoBehaviour
     IEnumerator ProcessOnNextFrame(HexTile next_tile) {
         yield return null;
         HideLogic(next_tile);
-
     }
 
     void HideLogic(HexTile next_tile) {

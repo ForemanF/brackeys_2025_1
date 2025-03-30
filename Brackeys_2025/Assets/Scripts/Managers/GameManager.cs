@@ -157,7 +157,7 @@ public class GameManager : MonoBehaviour
     }
 
     IEnumerator StartingLogic() {
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(1);
 
         yield return deck_manager.BringStrongholdToHand();
 
@@ -171,7 +171,7 @@ public class GameManager : MonoBehaviour
     void _OnNextTurn(NextTurnEvent e) {
         turn_number++;
 
-        turn_text.text = "Text " + turn_number.ToString();
+        turn_text.text = "Turn " + turn_number.ToString();
 
         StartCoroutine(ProcessTurn());
     }
@@ -211,6 +211,8 @@ public class GameManager : MonoBehaviour
 
         new_building_obj.GetComponent<HasHealth>().SetHealth(e.building_card.GetHealth());
 
+        EventBus.Publish(new ParticleBurstEvent(e.hex_tile.transform.position, BurstType.BuildHeal, 30));
+
         tile_manager.RevealTile(e.hex_tile);
 
         if(new_building_obj.TryGetComponent<Hut>(out Hut hut)) {
@@ -219,11 +221,12 @@ public class GameManager : MonoBehaviour
         }
 
         player_buildings.Add(building);
+
+        EventBus.Publish(new AudioEvent(AudioType.PlaceBuilding, Camera.main.transform.position));
     }
 
     void _OnDrawCard(DrawCardEvent e) {
         cards_needed_to_draw += e.amount;
-        Debug.Log(cards_needed_to_draw);
     }
 
     void RemoveUnitFromList(Faction faction, Unit unit) {
@@ -234,6 +237,8 @@ public class GameManager : MonoBehaviour
         else {
             remove_list = enemies;
         }
+
+        EventBus.Publish(new ResetTileEvent(unit.GetHex()));
 
         remove_list.Remove(unit);
     }
@@ -251,11 +256,6 @@ public class GameManager : MonoBehaviour
             IncreaseMaxEnergy(-building.GetSpecialValue());
             deck_manager.IncreaseMaxHandSize(-building.GetSpecialValue());
         }
-
-        //if(building.TryGetComponent<Stronghold>(out Stronghold strong)) {
-        //    Debug.Log("You Lose");
-        //    game_over_screen.SetActive(true);
-        //}
 
         EventBus.Publish(new ResetTileEvent(building.GetHex()));
 
@@ -452,6 +452,8 @@ public class GameManager : MonoBehaviour
         yield return null;
     }
 
+
+
     IEnumerator ProcessTurn() {
         is_ready_for_next_turn = false;
 
@@ -477,7 +479,6 @@ public class GameManager : MonoBehaviour
             for(int i = 0; i < num_randomize_tiles + turn_number / 10; ++i) {
                 SpawnEnemy();
             }
-        
         }
 
 

@@ -18,12 +18,6 @@ public class OpacityFader : MonoBehaviour
         StartCoroutine(LoopOpacity());
     }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
-    }
-
     public void SetColor(Color new_color) {
         current_color = new_color;
     }

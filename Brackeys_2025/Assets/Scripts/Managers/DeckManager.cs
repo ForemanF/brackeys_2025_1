@@ -71,7 +71,6 @@ public class DeckManager : MonoBehaviour
         hand_card_layer = LayerMask.NameToLayer("HandCard");
         non_hand_card_layer = LayerMask.NameToLayer("NonHandCard");
 
-
         card_action_dict = new Dictionary<int, CardAction>();
         foreach(IntToCardAction int_to_action in int_to_card_action_list) {
             card_action_dict[int_to_action.id] = int_to_action.card_action;
@@ -149,10 +148,17 @@ public class DeckManager : MonoBehaviour
             }
 
             if(draw_pile.Count == 0) {
+                if(discard_pile.Count == 0) {
+                    Debug.LogError("Trying to draw from an empty draw pile and there are no cards in discard");
+                    yield break;
+                }
+
+                Debug.Log("Moving discard pile to draw");
                 // move the discard pile to the draw pile & shuffle
                 DiscardToDrawPile();
                 Shuffle();
                 yield return new WaitForSeconds(draw_time_s * 2);
+                Debug.Log("Finished discard to draw");
             }
 
             HandleDrawCard();
@@ -162,6 +168,7 @@ public class DeckManager : MonoBehaviour
         yield return null;
     }
 
+    // puts the discard pile in your hand
     void DiscardToDrawPile() {
         foreach(Card card in discard_pile) {
             draw_pile.Add(card);
@@ -181,6 +188,7 @@ public class DeckManager : MonoBehaviour
 
         for(int i = 0; i < hand.Count; ++i)
         {
+            // TODO: 3/9 got an index out of range here
             draw_pile[i].SetBasePosition(ending_position);
         }
     }
@@ -228,6 +236,10 @@ public class DeckManager : MonoBehaviour
     }
     
     void HandleDrawCard() {
+        if(draw_pile.Count == 0) {
+            Debug.LogError("Trying to draw from an empty deck");
+        }
+
         int starting_hand_size = hand.Count;
         List<Vector3> ending_positions = GetCardPositions(starting_hand_size + 1);
 

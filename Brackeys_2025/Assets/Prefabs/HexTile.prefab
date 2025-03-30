@@ -184,6 +184,7 @@ MonoBehaviour:
   mesh_filter: {fileID: 7995927765289379967}
   offset_coords: {x: 0, y: 0}
   cube_coords: {x: 0, y: 0, z: 0}
+  fow_fade_s: 2
 --- !u!1001 &6832628141550452785
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -27,15 +27,14 @@ public class InteractionCard : CardAction
     override public void PerformCardAction(HexTile hex_tile, HexMeshTuple hex_mesh_tuple) {
         HasHealth has_health = hex_tile.GetObjectOnHex().GetComponent<HasHealth>();
         if(affected_faction == Faction.Enemy) {
-            Debug.Log("Doing Damage");
             // do damage
             has_health.TakeDamage(strength);
         }
         else { 
-            Debug.Log("Healing");
             // heal
             has_health.Heal(health);
 
+            EventBus.Publish(new ParticleBurstEvent(hex_tile.transform.position, BurstType.BuildHeal, 10));
         }
 
     }

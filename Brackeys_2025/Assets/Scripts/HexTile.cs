@@ -29,7 +29,8 @@ public enum TileMesh {
     Mine,
     Stronghold,
     Barracks,
-    Windmill
+    Windmill,
+    Lookout
 }
 
 public class HexTile : MonoBehaviour
@@ -57,7 +58,11 @@ public class HexTile : MonoBehaviour
 
     List<HexTile> neighbors = null;
 
+    [SerializeField]
+    float fow_fade_s = 1;
+
     GameObject fow = null;
+    MeshRenderer fow_mr = null;
 
     Mesh my_actual_mesh;
 
@@ -149,13 +154,43 @@ public class HexTile : MonoBehaviour
     public void SetFow(GameObject obj) {
         fow = obj;
         Utilities.SetLayerAndChildren(obj.transform, "Default");
+
+        fow_mr = fow.GetComponentInChildren<MeshRenderer>();
     }
 
     public void Reveal() { 
+        if(fow.activeSelf == false) {
+            return;
+        }
+
+
         Utilities.SetLayerAndChildren(transform, "Default");
 
         if(fow == null) {
             return;
+        }
+
+        EventBus.Publish(new ParticleBurstEvent(transform.position, BurstType.RevealFog, 50));
+
+        StartCoroutine(DiminishFog());
+    }
+
+    IEnumerator DiminishFog() {
+        float progress = 0;
+        float time_started = Time.time;
+
+        Color my_color = fow_mr.material.color;
+
+        while(progress < 1) {
+            progress = (Time.time - time_started) / fow_fade_s; 
+
+            float alpha = Mathf.Lerp(1, 0, progress);
+
+            my_color.a = alpha;
+
+            fow_mr.material.color = my_color;
+
+            yield return null;
         }
 
         fow.SetActive(false);

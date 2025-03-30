@@ -4,7 +4,9 @@ using UnityEngine;
 
 public enum BurstType { 
     PlayerDamage,
-    EnemyDamage
+    EnemyDamage,
+    BuildHeal,
+    RevealFog
 }
 
 [System.Serializable] public class BurstPs { public BurstType burst_type; public ParticleSystem ps; }
@@ -34,10 +36,5 @@ public class ParticleManager : MonoBehaviour
         ParticleSystem ps = burst_ps_dict[e.burst_type];
         ps.transform.position = e.position;
         ps.Emit(e.emit_amt);
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
     }
 }

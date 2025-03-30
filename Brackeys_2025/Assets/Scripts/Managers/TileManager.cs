@@ -33,6 +33,7 @@ public class TileManager : MonoBehaviour
     Subscription<HighlightCardActionEvent> highlight_card_action_sub;
     Subscription<TakeCardActionEvent> take_card_action_sub;
     Subscription<RevealTileEvent> reveal_tile_sub;
+    Subscription<RevealNearestFogEvent> reveal_nearest_fog_sub;
     Subscription<ResetTileEvent> reset_tile_sub;
 
     [SerializeField]
@@ -204,6 +205,7 @@ public class TileManager : MonoBehaviour
         highlight_card_action_sub = EventBus.Subscribe<HighlightCardActionEvent>(_OnHighlightCardAction);
         take_card_action_sub = EventBus.Subscribe<TakeCardActionEvent>(_OnTakeCardAction);
         reveal_tile_sub = EventBus.Subscribe<RevealTileEvent>(_OnRevealTile);
+        reveal_nearest_fog_sub = EventBus.Subscribe<RevealNearestFogEvent>(_OnRevealNearestFog);
         reset_tile_sub = EventBus.Subscribe<ResetTileEvent>(_OnResetTile);
     }
 
@@ -211,7 +213,16 @@ public class TileManager : MonoBehaviour
         RevealTile(e.revealed_tile);
     }
 
+    void _OnRevealNearestFog(RevealNearestFogEvent e) {
+        Debug.Log("Revealing nearby Hex Tiles");
+        for(int i = 0; i < e.amount; ++i) {
+            RevealNearestFog(e.source_tile);
+        }
+    }
+
     void _OnResetTile(ResetTileEvent e) {
+        Debug.Log("Resetting tile");
+        e.hex_tile.EmptyHex();
         e.hex_tile.SetTileMesh(TileMesh.Grass, tile_meshes_dict[TileMesh.Grass]);
     }
 
@@ -286,7 +297,6 @@ public class TileManager : MonoBehaviour
         }
         highlight_object.GetComponent<OpacityFader>().SetColor(Color.white);
     }
-
 
 
     List<HexTile> GetNeighbors(HexTile hex_tile) {
@@ -420,9 +430,47 @@ public class TileManager : MonoBehaviour
         }
     }
 
-    // Update is called once per frame
-    void Update()
-    {
+    void RevealNearestFog(HexTile hex_tile) {
+        List<HexTile> tiles = new List<HexTile>();
+
+        List<HexTile> unexplored = new List<HexTile>();
+        List<HexTile> explored = new List<HexTile>();
+
+        unexplored.Add(hex_tile);
+
+        while(unexplored.Count > 0) {
+
+            HexTile cur_explored = unexplored[0];
+
+            if (cur_explored.IsRevealed() == false)
+            {
+                cur_explored.Reveal();
+                return;
+            }
+
+            unexplored.RemoveAt(0);
+            explored.Add(cur_explored);
+
+            foreach(HexTile neighbor in cur_explored.GetNeighbors()) { 
+                if(!explored.Contains(neighbor)) {
+                    unexplored.Add(neighbor);
+                }
+            }
+        }
+
+        Debug.Log("No more tiles to reveal");
 
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
